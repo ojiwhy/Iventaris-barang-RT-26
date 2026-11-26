@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sistem Inventaris Barang RT 26</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+/* ===== Tema & variabel warna ===== */
+:root{--bg:#f4f5ff;--card:#fff;--tx:#1e1b4b;--mut:#6b7280;--bd:#e5e7eb;--blue:#4f46e5;--violet:#9333ea;--teal:#14b8a6;--orange:#f97316;--pink:#ec4899;--green:#16a34a;--red:#dc2626;--dred:#991b1b}
+[data-theme=dark]{--bg:#12102b;--card:#1d1a40;--tx:#eef0ff;--mut:#a5a8c9;--bd:#34305f}
+*{box-sizing:border-box}body{margin:0;font-family:Nunito,sans-serif;background:var(--bg);color:var(--tx)}
+button,input,select,textarea{font:inherit}
+.hide{display:none!important}
+/* ===== Layout ===== */
+#app{display:flex;min-height:100vh}
+aside{width:240px;background:linear-gradient(170deg,#4f46e5,#9333ea 55%,#ec4899);color:#fff;padding:18px 12px;position:sticky;top:0;height:100vh;flex-shrink:0;display:flex;flex-direction:column;gap:4px}
+aside h1{font-size:19px;margin:0 8px 14px;line-height:1.2}aside h1 small{display:block;font-weight:600;opacity:.8;font-size:12px}
+aside a{padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:600;color:#fff;opacity:.88;transition:.2s}
+aside a:hover,aside a.on{background:rgba(255,255,255,.22);opacity:1}
+aside .sp{flex:1}
+main{flex:1;padding:24px;min-width:0}
+h2{margin:0 0 16px;font-size:24px}
+.bar{display:none;background:linear-gradient(90deg,#4f46e5,#ec4899);color:#fff;padding:10px 14px;align-items:center;gap:10px;position:sticky;top:0;z-index:20}
+.bar button{background:none;border:0;color:#fff;font-size:22px}
+@media(max-width:800px){#app{display:block}.bar{display:flex}aside{position:fixed;z-index:30;left:-260px;transition:.25s;height:100%}aside.open{left:0}main{padding:14px}}
+/* ===== Komponen ===== */
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.card{background:var(--card);border-radius:18px;padding:16px;box-shadow:0 4px 18px rgba(79,70,229,.1);transition:.2s}
+.card:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(79,70,229,.2)}
+.stat{color:#fff;border-radius:18px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,.15)}
+.stat b{font-size:30px;display:block}.stat span{opacity:.92;font-size:13px}
+.g1{background:linear-gradient(135deg,#4f46e5,#7c3aed)}.g2{background:linear-gradient(135deg,#14b8a6,#22c55e)}.g3{background:linear-gradient(135deg,#f97316,#fb923c)}.g4{background:linear-gradient(135deg,#ec4899,#a855f7)}.g5{background:linear-gradient(135deg,#dc2626,#991b1b)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.two{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));margin:16px 0}
+input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--bd);border-radius:12px;background:var(--card);color:var(--tx)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);border-color:transparent}
+label{font-size:13px;font-weight:700;display:block;margin:10px 0 4px}
+.fg{display:grid;gap:0 14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.btn{border:0;border-radius:12px;padding:10px 16px;font-weight:700;color:#fff;cursor:pointer;background:linear-gradient(135deg,#4f46e5,#9333ea);transition:.2s}
+.btn:hover{filter:brightness(1.1);transform:translateY(-1px)}.btn.o{background:linear-gradient(135deg,#f97316,#ec4899)}.btn.t{background:linear-gradient(135deg,#14b8a6,#0ea5e9)}.btn.r{background:var(--red)}.btn.s{padding:6px 10px;font-size:12px}.btn.l{background:var(--bd);color:var(--tx)}
+.row input,.row select{width:auto;flex:1;min-width:140px}
+.tw{overflow-x:auto;background:var(--card);border-radius:18px;box-shadow:0 4px 18px rgba(79,70,229,.1)}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{background:linear-gradient(90deg,rgba(79,70,229,.14),rgba(236,72,153,.14))}tbody tr.c{cursor:pointer}tbody tr.c:hover{background:rgba(147,51,234,.08)}
+.badge{padding:3px 10px;border-radius:99px;color:#fff;font-size:12px;font-weight:700}
+.Tersedia,.Selesai,.Tepat{background:var(--green)}.Dipinjam{background:var(--orange)}.Habis{background:var(--red)}.Terlambat{background:var(--dred)}
+.pb{height:12px;border-radius:9px;background:var(--bd);overflow:hidden;margin:8px 0}.pb i{display:block;height:100%;border-radius:9px}
+.thumb{width:100%;height:110px;object-fit:cover;border-radius:12px;background:linear-gradient(135deg,#c7d2fe,#fbcfe8);display:flex;align-items:center;justify-content:center;font-size:42px}
+.warn{color:var(--red);font-weight:700;font-size:13px}.mut{color:var(--mut);font-size:13px}
+#sig{width:100%;height:150px;background:#fff;border:2px dashed var(--violet);border-radius:12px;touch-action:none;cursor:crosshair}
+/* ===== Modal & toast ===== */
+.ov{position:fixed;inset:0;background:rgba(15,10,50,.6);display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow:auto;z-index:50}
+.md{background:var(--card);border-radius:20px;padding:20px;width:100%;max-width:640px}
+#toast{position:fixed;right:16px;bottom:16px;z-index:99;display:flex;flex-direction:column;gap:8px}
+#toast div{padding:12px 16px;border-radius:12px;color:#fff;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,.25);background:var(--green);max-width:320px}#toast .err{background:var(--red)}
+#login{position:fixed;inset:0;background:linear-gradient(135deg,#4f46e5,#9333ea,#ec4899,#f97316);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
+#login .card{width:100%;max-width:340px;text-align:center}
+.bk{background:#fff;color:#111;padding:16px;border-radius:12px}.bk table td{border-bottom:1px solid #ddd;white-space:normal}.bk img{max-height:120px;border:1px solid #ccc;border-radius:8px;margin-right:8px}
+@media print{body *{visibility:hidden}.pt,.pt *{visibility:visible}.pt{position:absolute;left:0;top:0;width:100%;background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<!-- ===== Login pengurus ===== -->
+<div id="login"><div class="card"><div style="font-size:50px">📦</div><h2>Inventaris RT 26</h2>
+<p class="mut">Masuk sebagai pengurus RT</p>
+<input id="pw" type="password" placeholder="Kata sandi" onkeydown="if(event.key=='Enter')doLogin()">
+<br><br><button class="btn" style="width:100%" onclick="doLogin()">Masuk</button>
+<p class="mut">Kata sandi awal: <b>rt26admin</b></p></div></div>
+
+<div class="bar"><button onclick="document.querySelector('aside').classList.toggle('open')">☰</button><b>Inventaris RT 26</b></div>
+<div id="app" class="hide">
+<aside id="nav"></aside>
+<main id="main"></main>
+</div>
+<div id="toast"></div><div id="modal"></div>
+
+<script>
+/* ===== Utilitas ===== */
+const KEY='rt26db', PASS='rt26admin', $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const tgl=d=>d?new Date(d+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'-';
+const uid=()=>'x'+Math.random().toString(36).slice(2,9);
+const rp=n=>'Rp '+Number(n||0).toLocaleString('id-ID');
+const hrg=l=>l.harga??(item(l.itemId)||{}).harga??0; /* harga satuan saat transaksi */
+const nilai=l=>hrg(l)*l.qty;
+function toast(m,t){const e=document.createElement('div');e.textContent=m;if(t)e.className='err';$('#toast').append(e);setTimeout(()=>e.remove(),3800)}
+function modal(h){$('#modal').innerHTML=h?`<div class="ov" onclick="if(event.target==this)modal()"><div class="md">${h}</div></div>`:''}
+
+/* ===== Data & penyimpanan (localStorage) ===== */
+function seed(){
+  const it=(k,n,c,t,lok,ic)=>({id:uid(),kode:k,nama:n,kategori:c,total:t,kondisi:'Baik',lokasi:lok,foto:'',ket:'',ic});
+  const items=[it('BRG-001','Tenda Pesta 3x3','Perlengkapan Acara',4,'Pos Ronda','⛺'),it('BRG-002','Kursi Plastik','Perlengkapan Acara',60,'Gudang RT','🪑'),it('BRG-003','Meja Lipat','Perlengkapan Acara',10,'Gudang RT','🍽️'),it('BRG-004','Sound System','Elektronik',1,'Rumah Ketua RT','🔊'),it('BRG-005','Terpal Besar','Perlengkapan Acara',6,'Pos Ronda','🟦'),it('BRG-006','Karpet Gulung','Perlengkapan Acara',5,'Gudang RT','🧶'),it('BRG-007','Cangkul & Sabit','Kerja Bakti',12,'Pos Ronda','⛏️')];
+  [1500000,35000,150000,2500000,200000,120000,60000].forEach((h,k)=>items[k].harga=h);
+  const ln=(n,a,h,i,q,p,r,ret,pr)=>({id:uid(),harga:items[i].harga,no:n,nama:a,alamat:h,hp:'0812000000'+n.slice(-2),itemId:items[i].id,qty:q,returned:ret.reduce((s,x)=>s+x.qty,0),tglPinjam:p,rencana:r,perlu:pr,petugas:'Pak Hendra',foto:'',ttd:'',returns:ret});
+  return {items,seq:3,loans:[
+    ln('PJM-DEMO-001','Budi Santoso','Blok A No. 5','1',20,addDays(-12),addDays(-9),[{tgl:addDays(-9),qty:20,kondisi:'Baik',catatan:'',sisa:0}],'Acara syukuran'),
+    ln('PJM-DEMO-002','Siti Aminah','Blok B No. 12','0',2,addDays(-6),addDays(-2),[],'Pernikahan keluarga'),
+    ln('PJM-DEMO-003','Rahmat Hidayat','Blok C No. 3','3',1,addDays(-1),addDays(3),[],'Pengajian')]};
+}
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.items&&x.loans)return x}catch(e){}return seed()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast('Penyimpanan penuh. Hapus foto lama atau unduh backup.','err')}}
+let db=load();save();
+const item=id=>db.items.find(i=>i.id===id);
+const outQ=id=>db.loans.filter(l=>l.itemId===id).reduce((s,l)=>s+l.qty-l.returned,0);
+const sisa=i=>i.total-outQ(i.id);
+const istat=i=>sisa(i)<=0?'Habis':outQ(i.id)>0?'Dipinjam':'Tersedia';
+const lstat=l=>l.returned>=l.qty?'Selesai':l.rencana<today()?'Terlambat':'Dipinjam';
+const nm=l=>(item(l.itemId)||{nama:'(barang dihapus)'}).nama;
+function readImg(f,max=640){return new Promise((ok,no)=>{if(!f)return ok('');if(!f.type.startsWith('image/'))return no('File harus berupa gambar.');const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const s=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=im.width*s;c.height=im.height*s;c.getContext('2d').drawImage(im,0,0,c.width,c.height);ok(c.toDataURL('image/jpeg',.7))};im.onerror=()=>no('Gambar tidak dapat dibaca.');im.src=r.result};r.readAsDataURL(f)})}
+function dl(name,data,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),999)}
+
+/* ===== Login & navigasi ===== */
+function doLogin(){if($('#pw').value===PASS){sessionStorage.adm=1;enter()}else toast('Kata sandi salah.','err')}
+function enter(){$('#login').classList.add('hide');$('#app').classList.remove('hide');go(location.hash.slice(1)||'dash')}
+function logout(){delete sessionStorage.adm;location.reload()}
+const PAGES={dash:['🏠','Dashboard'],barang:['📦','Data Barang'],pinjam:['📝','Peminjaman'],kembali:['↩️','Pengembalian'],stok:['📊','Stok Sisa'],laporan:['📑','Laporan'],data:['💾','Backup & Restore']};
+let charts=[];
+function go(p){
+  if(!PAGES[p])p='dash';location.hash=p;charts.forEach(c=>c.destroy());charts=[];
+  $('#nav').classList.remove('open');
+  $('#nav').innerHTML=`<h1>📦 Inventaris RT 26<small>Peminjaman barang warga</small></h1>`+Object.entries(PAGES).map(([k,v])=>`<a class="${k==p?'on':''}" onclick="go('${k}')">${v[0]} ${v[1]}</a>`).join('')+`<div class="sp"></div><a onclick="toggleTheme()">🌗 Mode terang/gelap</a><a onclick="logout()">🚪 Keluar</a>`;
+  $('#main').innerHTML=`<h2>${PAGES[p][0]} ${PAGES[p][1]}</h2><div id="pg"></div>`;
+  ({dash:pDash,barang:pBarang,pinjam:pPinjam,kembali:pKembali,stok:pStok,laporan:pLaporan,data:pData})[p]();
+  scrollTo(0,0);
+}
+function toggleTheme(){const d=document.documentElement.dataset.theme=='dark'?'':'dark';document.documentElement.dataset.theme=d;localStorage.rt26theme=d}
+document.documentElement.dataset.theme=localStorage.rt26theme||'';
+
+/* ===== Dashboard ===== */
+function pDash(){
+  const ym=today().slice(0,7),late=db.loans.filter(l=>lstat(l)=='Terlambat').length;
+  const S=[['g1','Jenis barang',db.items.length],['g2','Total stok',db.items.reduce((s,i)=>s+i.total,0)],['g3','Sedang dipinjam',db.items.reduce((s,i)=>s+outQ(i.id),0)],['g4','Transaksi bulan ini',db.loans.filter(l=>l.tglPinjam.startsWith(ym)).length],['g5','Terlambat',late],['g1','Nilai barang dipinjam',rp(db.loans.reduce((s,l)=>s+(l.qty-l.returned)*hrg(l),0))]];
+  const recent=[...db.loans].sort((a,b)=>b.tglPinjam.localeCompare(a.tglPinjam)).slice(0,6);
+  $('#pg').innerHTML=`<div class="grid">${S.map(s=>`<div class="stat ${s[0]}"><b>${s[2]}</b><span>${s[1]}</span></div>`).join('')}</div>
+  <div class="two"><div class="card"><b>Stok per barang</b><canvas id="c1"></canvas></div><div class="card"><b>Tren peminjaman (6 bulan)</b><canvas id="c2"></canvas></div></div>
+  <h3>Peminjaman terbaru</h3>${loanTable(recent)}`;
+  const months=[...Array(6)].map((_,k)=>{const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-5+k);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')});
+  charts.push(new Chart($('#c1'),{type:'bar',data:{labels:db.items.map(i=>i.nama),datasets:[{label:'Sisa',data:db.items.map(sisa),backgroundColor:'#14b8a6'},{label:'Dipinjam',data:db.items.map(i=>outQ(i.id)),backgroundColor:'#f97316'}]},options:{scales:{x:{stacked:true},y:{stacked:true}}}}));
+  charts.push(new Chart($('#c2'),{type:'line',data:{labels:months.map(m=>tgl(m+'-01').replace(/^1 /,'')),datasets:[{label:'Transaksi',data:months.map(m=>db.loans.filter(l=>l.tglPinjam.startsWith(m)).length),borderColor:'#9333ea',backgroundColor:'rgba(236,72,153,.25)',fill:true,tension:.3}]},options:{scales:{y:{beginAtZero:true,ticks:{precision:0}}}}}));
+}
+function loanTable(ls){return `<div class="tw"><table><thead><tr><th>No.</th><th>Peminjam</th><th>Barang</th><th>Jml</th><th>Nilai</th><th>Pinjam</th><th>Rencana kembali</th><th>Status</th></tr></thead><tbody>${ls.map(l=>{const s=lstat(l);return `<tr class="c" onclick="bukti('${l.id}')"><td>${esc(l.no)}</td><td>${esc(l.nama)}</td><td>${esc(nm(l))}</td><td>${l.qty}</td><td>${rp(nilai(l))}</td><td>${tgl(l.tglPinjam)}</td><td>${tgl(l.rencana)}</td><td><span class="badge ${s}">${s}</span></td></tr>`}).join('')||'<tr><td colspan=8>Belum ada data.</td></tr>'}</tbody></table></div>`}
+
+/* ===== Data barang ===== */
+const F={q:'',k:'',s:''};
+function pBarang(){
+  const ks=[...new Set(db.items.map(i=>i.kategori))];
+  $('#pg').innerHTML=`<div class="row"><input id="fq" placeholder="🔍 Cari nama/kode…" value="${esc(F.q)}" oninput="F.q=this.value;listBarang()"><select id="fk" onchange="F.k=this.value;listBarang()"><option value="">Semua kategori</option>${ks.map(k=>`<option ${F.k==k?'selected':''}>${esc(k)}</option>`).join('')}</select><select onchange="F.s=this.value;listBarang()">${['','Tersedia','Dipinjam','Habis'].map(s=>`<option value="${s}" ${F.s==s?'selected':''}>${s||'Semua status'}</option>`).join('')}</select><button class="btn" onclick="formBarang()">+ Tambah barang</button></div><div class="grid" id="lb"></div>`;listBarang();
+}
+function listBarang(){
+  const q=F.q.toLowerCase(),L=db.items.filter(i=>(i.nama+i.kode).toLowerCase().includes(q)&&(!F.k||i.kategori==F.k)&&(!F.s||istat(i)==F.s));
+  $('#lb').innerHTML=L.map(i=>{const s=istat(i);return `<div class="card">${i.foto?`<img class="thumb" src="${i.foto}">`:`<div class="thumb">${i.ic||'📦'}</div>`}<h3 style="margin:10px 0 2px">${esc(i.nama)}</h3><div class="mut">${esc(i.kode)} · ${esc(i.kategori)}</div><p style="margin:8px 0">Total <b>${i.total}</b> · Dipinjam <b>${outQ(i.id)}</b> · Sisa <b>${sisa(i)}</b><br>Harga <b>${rp(i.harga)}</b> / unit</p><span class="badge ${s}">${s}</span> <span class="mut">${esc(i.kondisi)} · ${esc(i.lokasi)}</span><div class="row" style="margin:10px 0 0"><button class="btn s t" onclick="formBarang('${i.id}')">Ubah</button><button class="btn s r" onclick="delBarang('${i.id}')">Hapus</button></div></div>`}).join('')||'<p class="mut">Tidak ada barang yang cocok. Ubah filter atau tambah barang baru.</p>';
+}
+function formBarang(id){
+  const i=id?item(id):{kode:'BRG-'+String(db.items.length+1).padStart(3,'0'),nama:'',kategori:'',total:1,kondisi:'Baik',lokasi:'',ket:''};
+  modal(`<h3>${id?'Ubah':'Tambah'} barang</h3><div class="fg"><div><label>Kode</label><input id="b1" value="${esc(i.kode)}"></div><div><label>Nama barang *</label><input id="b2" value="${esc(i.nama)}"></div><div><label>Kategori</label><input id="b3" list="kl" value="${esc(i.kategori)}"><datalist id="kl">${[...new Set(db.items.map(x=>x.kategori))].map(k=>`<option>${esc(k)}`).join('')}</datalist></div><div><label>Jumlah total *</label><input id="b4" type="number" min="0" value="${i.total}"></div><div><label>Kondisi</label><select id="b5">${['Baik','Rusak ringan','Rusak berat'].map(k=>`<option ${i.kondisi==k?'selected':''}>${k}</option>`).join('')}</select></div><div><label>Lokasi simpan</label><input id="b6" value="${esc(i.lokasi)}"></div><div><label>Harga per unit (Rp)</label><input id="b9" type="number" min="0" step="1000" value="${i.harga||0}"></div></div><label>Foto (opsional)</label><input id="b7" type="file" accept="image/*"><label>Keterangan</label><textarea id="b8">${esc(i.ket)}</textarea><div class="row" style="margin-top:14px"><button class="btn" onclick="saveBarang('${id||''}')">Simpan barang</button><button class="btn l" onclick="modal()">Batal</button></div>`);
+}
+async function saveBarang(id){
+  const n=$('#b2').value.trim(),t=parseInt($('#b4').value);
+  if(!n)return toast('Nama barang wajib diisi.','err');
+  if(isNaN(t)||t<0)return toast('Jumlah total harus angka 0 atau lebih.','err');
+  const h=parseInt($('#b9').value);if(isNaN(h)||h<0)return toast('Harga harus angka 0 atau lebih.','err');
+  if(id&&t<outQ(id))return toast(`Jumlah total tidak boleh kurang dari barang yang sedang dipinjam (${outQ(id)}).`,'err');
+  let foto;try{foto=await readImg($('#b7').files[0])}catch(e){return toast(e,'err')}
+  const d={kode:$('#b1').value.trim(),nama:n,kategori:$('#b3').value.trim()||'Lainnya',total:t,harga:h,kondisi:$('#b5').value,lokasi:$('#b6').value.trim(),ket:$('#b8').value.trim()};
+  if(id){const i=item(id);Object.assign(i,d);if(foto)i.foto=foto}else db.items.push({id:uid(),foto,ic:'📦',...d});
+  save();modal();toast('Barang disimpan.');pBarang();
+}
+function delBarang(id){
+  if(db.loans.some(l=>l.itemId==id&&lstat(l)!='Selesai'))return toast('Barang masih dipinjam, tidak bisa dihapus.','err');
+  if(confirm('Hapus barang ini? Riwayat transaksinya tetap tersimpan.')){db.items=db.items.filter(i=>i.id!=id);save();toast('Barang dihapus.');pBarang()}
+}
+
+/* ===== Peminjaman ===== */
+let sigDirty=false,fotoData='';
+function pPinjam(){
+  const opt=db.items.filter(i=>sisa(i)>0).map(i=>`<option value="${i.id}">${esc(i.nama)} (sisa ${sisa(i)}) · ${rp(i.harga)}</option>`).join('');
+  $('#pg').innerHTML=`<div class="card"><div class="fg"><div><label>Nama peminjam *</label><input id="p1"></div><div><label>Alamat / blok rumah *</label><input id="p2"></div><div><label>No. HP / WhatsApp *</label><input id="p3" type="tel"></div><div><label>Barang *</label><select id="p4" onchange="hargaInfo()"><option value="">— pilih barang —</option>${opt}</select></div><div><label>Jumlah *</label><input id="p5" type="number" min="1" value="1" oninput="hargaInfo()"></div><div><label>Tanggal pinjam *</label><input id="p6" type="date" value="${today()}"></div><div><label>Rencana kembali *</label><input id="p7" type="date" value="${addDays(3)}"></div><div><label>Petugas / penerima *</label><input id="p9"></div></div><p id="ph" class="mut"></p><label>Keperluan</label><input id="p8"><label>Foto KTP / identitas / peminjam *</label><input id="p10" type="file" accept="image/*"><label>Tanda tangan peminjam * <a href="#" onclick="initSig();return false">(hapus)</a></label><canvas id="sig" width="500" height="150"></canvas><br><br><button class="btn o" onclick="savePinjam()">Simpan peminjaman</button></div>`;initSig();
+}
+function hargaInfo(){const i=item($('#p4').value),q=parseInt($('#p5').value)||0;$('#ph').innerHTML=i?`Harga satuan <b>${rp(i.harga)}</b> × ${q} = total nilai <b>${rp((i.harga||0)*q)}</b>`:''}
+function initSig(){
+  const c=$('#sig'),x=c.getContext('2d');let d=false;sigDirty=false;x.clearRect(0,0,c.width,c.height);x.lineWidth=2.5;x.lineCap='round';x.strokeStyle='#1e1b4b';
+  const p=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
+  c.onpointerdown=e=>{d=true;c.setPointerCapture(e.pointerId);x.beginPath();x.moveTo(...p(e))};
+  c.onpointermove=e=>{if(d){x.lineTo(...p(e));x.stroke();sigDirty=true}};c.onpointerup=()=>d=false;
+}
+async function savePinjam(){
+  const g=i=>$('#p'+i).value.trim(),it=item($('#p4').value),q=parseInt($('#p5').value);
+  for(const [i,n] of [[1,'Nama peminjam'],[2,'Alamat'],[3,'Nomor HP'],[9,'Nama petugas']])if(!g(i))return toast(n+' wajib diisi.','err');
+  if(!/^[0-9+\-\s]{8,16}$/.test(g(3)))return toast('Nomor HP tidak valid (8–16 angka).','err');
+  if(!it)return toast('Pilih barang terlebih dahulu.','err');
+  if(isNaN(q)||q<1)return toast('Jumlah harus minimal 1.','err');
+  if(q>sisa(it))return toast(`Jumlah melebihi stok sisa (${sisa(it)}).`,'err');
+  if(!g(6)||!g(7)||g(7)<g(6))return toast('Tanggal rencana kembali tidak boleh sebelum tanggal pinjam.','err');
+  if(!$('#p10').files[0])return toast('Unggah foto KTP / identitas peminjam.','err');
+  if(!sigDirty)return toast('Tanda tangan peminjam belum diisi.','err');
+  let foto;try{foto=await readImg($('#p10').files[0])}catch(e){return toast(e,'err')}
+  const t=today().replace(/-/g,'');db.seq=(db.seq||0)+1;
+  const l={id:uid(),no:`PJM-${t}-${String(db.seq).padStart(3,'0')}`,nama:g(1),alamat:g(2),hp:g(3),itemId:it.id,qty:q,returned:0,tglPinjam:g(6),rencana:g(7),perlu:g(8),petugas:g(9),harga:it.harga||0,foto,ttd:$('#sig').toDataURL('image/png'),returns:[]};
+  db.loans.push(l);save();toast('Peminjaman tersimpan. Stok berkurang otomatis.');pPinjam();bukti(l.id);
+}
+
+/* ===== Bukti (peminjaman & pengembalian) ===== */
+let cur=null;
+function rowsBukti(l,r){
+  const base=[['No. Transaksi',l.no],['Nama peminjam',l.nama],['Alamat',l.alamat],['No. HP',l.hp],['Barang',nm(l)],['Harga satuan',rp(hrg(l))]];
+  return r?[...base,['Tanggal kembali',tgl(r.tgl)],['Jumlah dikembalikan',r.qty],['Nilai barang dikembalikan',rp(hrg(l)*r.qty)],['Kondisi saat kembali',r.kondisi],['Catatan',r.catatan||'-'],['Belum dikembalikan',r.sisa+' dari '+l.qty],['Keterlambatan',r.tgl>l.rencana?'Terlambat':'Tepat waktu']]
+   :[...base,['Jumlah',l.qty],['Total nilai barang',rp(nilai(l))],['Tanggal pinjam',tgl(l.tglPinjam)],['Rencana kembali',tgl(l.rencana)],['Keperluan',l.perlu||'-'],['Petugas / penerima',l.petugas],['Status',lstat(l)]];
+}
+function bukti(id,ri){
+  const l=db.loans.find(x=>x.id==id),r=ri==null?null:l.returns[ri];cur={l,r};
+  const imgs=r?'':`<p><b>Bukti peminjam</b></p>${l.foto?`<img src="${l.foto}">`:''}${l.ttd?`<img src="${l.ttd}">`:''}`;
+  const hist=!r&&l.returns.length?`<p><b>Riwayat pengembalian</b></p>`+l.returns.map((x,k)=>`<div class="mut">${tgl(x.tgl)} · ${x.qty} unit · ${esc(x.kondisi)} <a href="#" onclick="bukti('${l.id}',${k});return false">lihat bukti</a></div>`).join(''):'';
+  modal(`<div id="bkp" class="bk"><center><b style="font-size:18px">RT 26 — Sistem Inventaris Barang</b><br>Bukti ${r?'Pengembalian':'Peminjaman'} Barang</center><br><table>${rowsBukti(l,r).map(x=>`<tr><td><b>${x[0]}</b></td><td>${esc(x[1])}</td></tr>`).join('')}</table>${imgs}${hist}</div><div class="row" style="margin-top:12px"><button class="btn" onclick="printEl('bkp')">🖨️ Cetak</button><button class="btn o" onclick="pdfBukti()">⬇️ Unduh PDF</button><button class="btn l" onclick="modal()">Tutup</button></div>`);
+}
+function printEl(id){const e=document.getElementById(id);e.classList.add('pt');print();e.classList.remove('pt')}
+function pdfDoc(){if(!window.jspdf){toast('Library PDF belum termuat. Periksa koneksi internet.','err');return null}return new jspdf.jsPDF()}
+function kop(d,judul,sub){d.setFontSize(16);d.text('RT 26',105,15,{align:'center'});d.setFontSize(11);d.text('Sistem Inventaris Barang — '+judul,105,22,{align:'center'});if(sub)d.text(sub,105,28,{align:'center'});d.line(14,31,196,31)}
+function pdfBukti(){
+  const d=pdfDoc();if(!d)return;const {l,r}=cur;kop(d,'Bukti '+(r?'Pengembalian':'Peminjaman'));
+  d.autoTable({startY:36,body:rowsBukti(l,r).map(x=>[x[0],String(x[1])]),theme:'grid',columnStyles:{0:{fontStyle:'bold',cellWidth:55}}});
+  let y=d.lastAutoTable.finalY+8;
+  if(!r){d.text('Bukti peminjam:',14,y);try{if(l.foto)d.addImage(l.foto,'JPEG',14,y+3,60,45);if(l.ttd)d.addImage(l.ttd,'PNG',85,y+3,60,18)}catch(e){}}
+  d.save((r?'Pengembalian-':'Peminjaman-')+l.no+'.pdf');
+}
+
+/* ===== Pengembalian ===== */
+function pKembali(){
+  const act=db.loans.filter(l=>lstat(l)!='Selesai');
+  $('#pg').innerHTML=`<div class="card"><label>Transaksi peminjaman aktif *</label><select id="r1" onchange="infoKembali()"><option value="">— pilih transaksi —</option>${act.map(l=>`<option value="${l.id}">${esc(l.no)} · ${esc(l.nama)} · ${esc(nm(l))} (${l.qty-l.returned} belum kembali)${lstat(l)=='Terlambat'?' — TERLAMBAT':''}</option>`).join('')}</select><p id="ri" class="mut"></p><div class="fg"><div><label>Tanggal kembali *</label><input id="r2" type="date" value="${today()}"></div><div><label>Jumlah dikembalikan *</label><input id="r3" type="number" min="1" value="1"></div><div><label>Kondisi saat kembali</label><select id="r4"><option>Baik</option><option>Rusak ringan</option><option>Rusak berat</option></select></div></div><label>Catatan</label><input id="r5"><br><br><button class="btn t" onclick="saveKembali()">Simpan pengembalian</button></div><h3>Pengembalian terbaru</h3>${retTable()}`;
+}
+function infoKembali(){const l=db.loans.find(x=>x.id==$('#r1').value);if(!l)return $('#ri').textContent='';const s=lstat(l),b=l.qty-l.returned;$('#r3').max=b;$('#r3').value=b;$('#ri').innerHTML=`Dipinjam ${l.qty}, belum kembali <b>${b}</b>. Rencana kembali ${tgl(l.rencana)}. <span class="badge ${s}">${s}</span>`}
+function saveKembali(){
+  const l=db.loans.find(x=>x.id==$('#r1').value),q=parseInt($('#r3').value);
+  if(!l)return toast('Pilih transaksi peminjaman.','err');
+  if(isNaN(q)||q<1)return toast('Jumlah dikembalikan minimal 1.','err');
+  if(q>l.qty-l.returned)return toast(`Jumlah melebihi yang belum dikembalikan (${l.qty-l.returned}).`,'err');
+  const t=$('#r2').value;if(!t||t<l.tglPinjam)return toast('Tanggal kembali tidak boleh sebelum tanggal pinjam.','err');
+  l.returned+=q;l.returns.push({tgl:t,qty:q,kondisi:$('#r4').value,catatan:$('#r5').value.trim(),sisa:l.qty-l.returned});
+  save();toast('Pengembalian tersimpan. Stok bertambah otomatis.');pKembali();bukti(l.id,l.returns.length-1);
+}
+function allReturns(){return db.loans.flatMap(l=>l.returns.map((r,k)=>({l,r,k})))}
+function retTable(){const L=allReturns().sort((a,b)=>b.r.tgl.localeCompare(a.r.tgl)).slice(0,8);return `<div class="tw"><table><thead><tr><th>No.</th><th>Peminjam</th><th>Barang</th><th>Jml</th><th>Tgl kembali</th><th>Kondisi</th><th>Ket.</th></tr></thead><tbody>${L.map(({l,r,k})=>`<tr class="c" onclick="bukti('${l.id}',${k})"><td>${esc(l.no)}</td><td>${esc(l.nama)}</td><td>${esc(nm(l))}</td><td>${r.qty}</td><td>${tgl(r.tgl)}</td><td>${esc(r.kondisi)}</td><td><span class="badge ${r.tgl>l.rencana?'Terlambat':'Tepat'}">${r.tgl>l.rencana?'Terlambat':'Tepat waktu'}</span></td></tr>`).join('')||'<tr><td colspan=7>Belum ada pengembalian.</td></tr>'}</tbody></table></div>`}
+
+/* ===== Stok sisa ===== */
+function pStok(){
+  $('#pg').innerHTML=`<div class="grid">${db.items.map(i=>{const s=sisa(i),p=i.total?Math.round(s/i.total*100):0,c=s<=0?'#dc2626':s<=2?'#f97316':'#14b8a6';return `<div class="card"><b>${i.ic||'📦'} ${esc(i.nama)}</b><div class="pb"><i style="width:${p}%;background:${c}"></i></div>Total ${i.total} · Dipinjam ${outQ(i.id)} · <b>Sisa ${s}</b>${s<=0?'<div class="warn">⚠️ Stok habis</div>':s<=2?'<div class="warn">⚠️ Stok menipis</div>':''}</div>`}).join('')}</div>`;
+}
+
+/* ===== Laporan ===== */
+const R={j:'p',a:'',b:'',n:'',i:'',s:''};
+function pLaporan(){
+  $('#pg').innerHTML=`<div class="row"><select onchange="R.j=this.value;R.s='';pLaporan()"><option value="p" ${R.j=='p'?'selected':''}>Laporan Peminjaman</option><option value="k" ${R.j=='k'?'selected':''}>Laporan Pengembalian</option></select><span class="mut">Dari</span><input type="date" value="${R.a}" onchange="R.a=this.value;lap()"><span class="mut">Sampai</span><input type="date" value="${R.b}" onchange="R.b=this.value;lap()"><input placeholder="Nama peminjam" value="${esc(R.n)}" oninput="R.n=this.value;lap()"><select onchange="R.i=this.value;lap()"><option value="">Semua barang</option>${db.items.map(i=>`<option value="${i.id}" ${R.i==i.id?'selected':''}>${esc(i.nama)}</option>`).join('')}</select><select onchange="R.s=this.value;lap()"><option value="">Semua status</option>${(R.j=='p'?['Dipinjam','Terlambat','Selesai']:['Tepat waktu','Terlambat']).map(s=>`<option ${R.s==s?'selected':''}>${s}</option>`).join('')}</select></div><div class="row"><button class="btn o" onclick="repPDF()">⬇️ PDF</button><button class="btn t" onclick="repCSV()">⬇️ Excel/CSV</button><button class="btn" onclick="printEl('lapOut')">🖨️ Cetak</button></div><div id="lapOut" class="bk"></div><div id="riw"></div>`;lap();
+}
+function repData(){
+  const inR=d=>(!R.a||d>=R.a)&&(!R.b||d<=R.b),ok=l=>(!R.n||l.nama.toLowerCase().includes(R.n.toLowerCase()))&&(!R.i||l.itemId==R.i);
+  if(R.j=='p'){const L=db.loans.filter(l=>ok(l)&&inR(l.tglPinjam)&&(!R.s||lstat(l)==R.s));return {t:'Laporan Peminjaman',h:['No.','Tgl pinjam','Peminjam','Barang','Jml','Nilai','Rencana kembali','Sudah kembali','Status'],r:L.map(l=>[l.no,tgl(l.tglPinjam),l.nama,nm(l),l.qty,rp(nilai(l)),tgl(l.rencana),l.returned,lstat(l)]),sum:`Total transaksi: ${L.length} · Total unit dipinjam: ${L.reduce((s,l)=>s+l.qty,0)} · Total nilai: ${rp(L.reduce((s,l)=>s+nilai(l),0))}`,ids:L.map(l=>[l.id])}}
+  const L=allReturns().filter(({l,r})=>ok(l)&&inR(r.tgl)&&(!R.s||(r.tgl>l.rencana?'Terlambat':'Tepat waktu')==R.s));
+  return {t:'Laporan Pengembalian',h:['No.','Tgl kembali','Peminjam','Barang','Jml','Nilai','Kondisi','Catatan','Status'],r:L.map(({l,r})=>[l.no,tgl(r.tgl),l.nama,nm(l),r.qty,rp(hrg(l)*r.qty),r.kondisi,r.catatan||'-',r.tgl>l.rencana?'Terlambat':'Tepat waktu']),sum:`Total pengembalian: ${L.length} · Total unit kembali: ${L.reduce((s,x)=>s+x.r.qty,0)} · Total nilai: ${rp(L.reduce((s,x)=>s+x.r.qty*hrg(x.l),0))}`,ids:L.map(({l,k})=>[l.id,k])};
+}
+const periode=()=>'Periode: '+(R.a?tgl(R.a):'awal')+' s.d. '+(R.b?tgl(R.b):'sekarang');
+function lap(){
+  const d=repData();
+  $('#lapOut').innerHTML=`<center><b style="font-size:18px">RT 26</b><br>${d.t}<br><small>${periode()}</small></center><div style="overflow-x:auto"><table><thead><tr>${d.h.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${d.r.map((r,k)=>`<tr class="c" onclick="bukti('${d.ids[k][0]}'${d.ids[k][1]!=null?','+d.ids[k][1]:''})">${r.map(x=>`<td>${esc(x)}</td>`).join('')}</tr>`).join('')||`<tr><td colspan=9>Tidak ada data pada filter ini.</td></tr>`}</tbody></table></div><p><b>${d.sum}</b></p>`;
+  const w=R.n.trim()?db.loans.filter(l=>l.nama.toLowerCase().includes(R.n.toLowerCase())):[];
+  $('#riw').innerHTML=w.length?`<h3>Riwayat peminjam “${esc(R.n)}”</h3><div class="grid">${w.map(l=>`<div class="card"><b>${esc(l.nama)}</b><div class="mut">${esc(l.no)} · ${esc(nm(l))} ×${l.qty}</div>${l.foto?`<img class="thumb" src="${l.foto}">`:''}${l.ttd?`<img src="${l.ttd}" style="width:100%;background:#fff;border-radius:8px;margin-top:6px">`:''}<div class="row" style="margin:8px 0 0"><span class="badge ${lstat(l)}">${lstat(l)}</span><button class="btn s" onclick="bukti('${l.id}')">Bukti</button></div></div>`).join('')}</div>`:'';
+}
+function repPDF(){
+  const x=pdfDoc();if(!x)return;const d=repData();kop(x,d.t,periode());
+  x.autoTable({startY:36,head:[d.h],body:d.r.map(r=>r.map(String)),styles:{fontSize:8},headStyles:{fillColor:[79,70,229]}});
+  x.setFontSize(10);x.text(d.sum,14,x.lastAutoTable.finalY+8);x.save(d.t.replace(/ /g,'-')+'.pdf');
+}
+function repCSV(){const d=repData(),q=v=>`"${String(v).replace(/"/g,'""')}"`;dl(d.t.replace(/ /g,'-')+'.csv','\ufeff'+[['RT 26',d.t,periode()],d.h,...d.r,[d.sum]].map(r=>r.map(q).join(';')).join('\r\n'),'text/csv')}
+
+/* ===== Backup & restore ===== */
+function pData(){
+  $('#pg').innerHTML=`<div class="two"><div class="card"><h3>Backup data</h3><p class="mut">Unduh seluruh data (barang, transaksi, foto, tanda tangan) sebagai file JSON.</p><button class="btn t" onclick="dl('backup-rt26-'+today()+'.json',JSON.stringify(db),'application/json')">⬇️ Unduh backup</button></div><div class="card"><h3>Restore data</h3><p class="mut">Memulihkan data akan menggantikan semua data saat ini.</p><input type="file" accept=".json" onchange="restore(this.files[0])"></div><div class="card"><h3>Reset data contoh</h3><p class="mut">Hapus semua data dan kembali ke data contoh.</p><button class="btn r" onclick="if(confirm('Yakin hapus semua data?')){db=seed();save();toast('Data direset.');pData()}">Reset</button></div></div>`;
+}
+function restore(f){if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!Array.isArray(x.items)||!Array.isArray(x.loans))throw 0;if(!confirm('Ganti semua data saat ini dengan isi backup?'))return;db=x;save();toast('Data berhasil dipulihkan.');pData()}catch(e){toast('File backup tidak valid.','err')}};r.readAsText(f)}
+
+if(sessionStorage.adm)enter();
+</script>
+</body>
+</html>
